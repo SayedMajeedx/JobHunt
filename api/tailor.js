@@ -1,6 +1,6 @@
-// Claude fit analysis, CV edits, outreach note and cover letter for one job.
+// AI fit analysis, CV edits, outreach note and cover letter for one job.
+import { AIError, tailorForJob } from "../lib/ai.js";
 import { onlyPost, requireUser } from "../lib/auth.js";
-import { ClaudeError, tailorForJob } from "../lib/claude.js";
 
 export default async function handler(req, res) {
   if (!onlyPost(req, res) || !(await requireUser(req, res))) return;
@@ -9,6 +9,6 @@ export default async function handler(req, res) {
   try {
     res.status(200).json({ tailor: await tailorForJob(profile, job, String(cv_text).slice(0, 120_000)) });
   } catch (e) {
-    res.status(e instanceof ClaudeError ? e.status : 500).json({ error: e.message });
+    res.status(e instanceof AIError ? e.status : 500).json({ error: e.message });
   }
 }

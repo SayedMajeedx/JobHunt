@@ -1,6 +1,6 @@
-// Claude analysis of the CV / LinkedIn profile text (extracted from the PDFs in the browser).
+// AI analysis of the CV / LinkedIn profile text (extracted from the PDFs in the browser).
+import { AIError, analyzeProfile } from "../lib/ai.js";
 import { onlyPost, requireUser } from "../lib/auth.js";
-import { analyzeProfile, ClaudeError } from "../lib/claude.js";
 
 const MAX = 120_000;
 
@@ -11,6 +11,6 @@ export default async function handler(req, res) {
   try {
     res.status(200).json({ profile: await analyzeProfile(String(cv_text).slice(0, MAX), String(li_text).slice(0, MAX)) });
   } catch (e) {
-    res.status(e instanceof ClaudeError ? e.status : 500).json({ error: e.message });
+    res.status(e instanceof AIError ? e.status : 500).json({ error: e.message });
   }
 }

@@ -140,7 +140,7 @@ export async function handle(method, url, body) {
 }
 
 /* ------------------------------------------------------------------ settings & profile */
-on("GET", "/api/settings", async () => ({ has_key: Boolean(config.ai), email: (await session())?.user?.email || "" }));
+on("GET", "/api/settings", async () => ({ has_key: Boolean(config.ai), ai_name: config.aiName || "", email: (await session())?.user?.email || "" }));
 
 async function getProfileRow() {
   return q(sb.from("profiles").select("*").maybeSingle());
@@ -255,7 +255,7 @@ on("POST", "/api/jobs/(\\d+)/refresh", async ({ args: [id] }) => {
 });
 
 on("POST", "/api/jobs/(\\d+)/tailor", async ({ args: [id] }) => {
-  if (!config.ai) throw new Error("Claude isn't set up. Add ANTHROPIC_API_KEY in your Vercel project settings.");
+  if (!config.ai) throw new Error("AI isn't set up yet — see Settings.");
   const prof = await getProfileRow();
   if (!prof?.data) throw new Error("Analyse your CV or LinkedIn profile first.");
   let job = await q(sb.from("jobs").select("*").eq("id", id).single());

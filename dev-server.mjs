@@ -43,7 +43,10 @@ http.createServer(async (req, res) => {
   const p = decodeURIComponent(url.pathname);
   try {
     if (MOCK && p === "/auth/v1/user") return send(res, 200, { id: "dev-user", email: "dev@example.com" });
-    if (MOCK && p === "/api/config") return send(res, 200, { supabaseUrl: "mock", supabaseKey: "mock", ai: Boolean(process.env.ANTHROPIC_API_KEY), mock: true });
+    if (MOCK && p === "/api/config") {
+      const ai = (await import("./lib/ai.js")).provider();
+      return send(res, 200, { supabaseUrl: "mock", supabaseKey: "mock", ai: Boolean(ai), aiName: ai?.name || "", mock: true });
+    }
     if (MOCK && p === "/dev/mock-supabase.js") return send(res, 200, fs.readFileSync(path.join(ROOT, "dev", "mock-supabase.js")), TYPES[".js"]);
 
     const api = p.match(/^\/api\/([a-z-]+)$/);

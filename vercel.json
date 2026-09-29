@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "",
+  "buildCommand": "echo Static site: serving public/",
   "outputDirectory": "public",
   "functions": {
     "api/*.js": { "maxDuration": 60 }

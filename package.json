@@ -6,7 +6,7 @@
     "dev": "node dev-server.mjs"
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "latest",

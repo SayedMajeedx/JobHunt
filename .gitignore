@@ -1,0 +1,6 @@
+node_modules/
+.env
+.env.local
+.vercel/
+local-app/data/
+__pycache__/

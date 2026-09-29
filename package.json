@@ -1,0 +1,15 @@
+{
+  "name": "jobhunt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "node-html-parser": "^7.0.1"
+  }
+}

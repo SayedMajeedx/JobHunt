@@ -1,0 +1,6 @@
+local-app
+dev-server.mjs
+dev
+.env
+.env.local
+.claude

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobHunt</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23191917'/><path d='M9 21.5c1 1 2.2 1.5 3.6 1.5 2.6 0 3.9-1.6 3.9-4.4V9M20 9v14M20 16h4' stroke='white' stroke-width='2.4' fill='none'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand">JobHunt</div>
+  <nav>
+    <a href="#dashboard" data-view="dashboard">Today <span class="count" id="navDue"></span></a>
+    <a href="#jobs" data-view="jobs">Find jobs <span class="count" id="navJobs"></span></a>
+    <a href="#tracker" data-view="tracker">Applications <span class="count" id="navApps"></span></a>
+    <a href="#profile" data-view="profile">Profile</a>
+  </nav>
+  <nav class="nav-bottom">
+    <a href="#settings" data-view="settings">Settings</a>
+  </nav>
+</aside>
+
+<main id="main">
+  <section id="view-dashboard" class="view"></section>
+  <section id="view-profile" class="view"></section>
+  <section id="view-jobs" class="view"></section>
+  <section id="view-tracker" class="view"></section>
+  <section id="view-settings" class="view"></section>
+</main>
+
+<div id="drawer" class="drawer" aria-hidden="true"><div class="drawer-panel" id="drawerPanel"></div></div>
+<div id="modal" class="modal" aria-hidden="true"><div class="modal-box" id="modalBox"></div></div>
+<div id="toasts"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

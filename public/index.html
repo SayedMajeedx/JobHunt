@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JobHunt</title>
+<meta name="description" content="Find jobs that match your CV and track every application.">
+<meta name="theme-color" content="#141413">
+<script>
+  // apply the saved theme before the page draws (dark unless changed in Settings)
+  try { var t = JSON.parse(localStorage.getItem("theme") || '"dark"'); if (t !== "system") document.documentElement.setAttribute("data-theme", t); }
+  catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
+</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JobHunt">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="gate"></div>
+<aside class="sidebar">
+  <div class="brand">JobHunt</div>
+  <nav>
+    <a href="#dashboard" data-view="dashboard">Today <span class="count" id="navDue"></span></a>
+    <a href="#jobs" data-view="jobs">Find jobs <span class="count" id="navJobs"></span></a>
+    <a href="#tracker" data-view="tracker">Applications <span class="count" id="navApps"></span></a>
+    <a href="#profile" data-view="profile">Profile</a>
+  </nav>
+  <nav class="nav-bottom">
+    <a href="#settings" data-view="settings">Settings</a>
+  </nav>
+</aside>
+
+<main id="main">
+  <div id="offlineBar" class="offline-bar hidden">You're offline — showing the last saved copy. Changes can't be saved until you reconnect.</div>
+  <section id="view-dashboard" class="view"></section>
+  <section id="view-profile" class="view"></section>
+  <section id="view-jobs" class="view"></section>
+  <section id="view-tracker" class="view"></section>
+  <section id="view-settings" class="view"></section>
+</main>
+
+<div id="drawer" class="drawer" aria-hidden="true"><div class="drawer-panel" id="drawerPanel"></div></div>
+<div id="modal" class="modal" aria-hidden="true"><div class="modal-box" id="modalBox"></div></div>
+<div id="toasts"></div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jobhunt-desktop",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\TCIG-Sayeed Majeed\\Desktop\\JobHunt\\dev-server.mjs"],
+      "env": { "PORT": "3058" },
+      "port": 3058
+    }
+  ]
+}

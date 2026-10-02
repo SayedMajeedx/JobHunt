@@ -2,7 +2,7 @@
 
 A private job-search app you can install on your phone and computer.
 
-- **Find jobs**: reads your CV and/or LinkedIn profile PDF, works out your target roles and skills, searches LinkedIn's public job listings, and scores every job against you.
+- **Find jobs**: reads your CV and/or LinkedIn profile PDF, works out your target roles and skills, searches LinkedIn's public job listings (and Indeed, if you add a free key), and scores every job against you.
 - **Applications**: a board and table of every application, with stages, follow-up reminders, contacts, message templates and an activity log.
 
 Your data is stored in your own Supabase database and synced across every device you sign in on.
@@ -38,6 +38,7 @@ Then in Vercel go to **Project → Settings → Environment Variables** and add:
 | `SUPABASE_URL` | Project URL from Supabase | yes |
 | `SUPABASE_ANON_KEY` | anon / publishable key | yes |
 | `GROQ_API_KEY` | Free key from [console.groq.com/keys](https://console.groq.com/keys) (no card). Turns on AI analysis inside the app | recommended |
+| `RAPIDAPI_KEY` | Turns on **Indeed** search. Free, no card: subscribe to the Basic plan of [JSearch on RapidAPI](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch) (200 requests/month) and copy your key | optional |
 | `ALLOWED_EMAILS` | Your email; extra protection so only you can use the server functions | optional |
 
 **AI options.** Set one of these; if several are set, the first in this list wins:
@@ -58,6 +59,7 @@ Then in Vercel go to **Project → Settings → Environment Variables** and add:
 
 - **Keep the app open while a search runs.** The browser paces the requests, about 2 seconds each. On a phone, switching away for a long time can pause the search; you can simply run it again.
 - **LinkedIn limits:** searches use LinkedIn's public, logged-out job pages. LinkedIn is stricter with cloud servers than with home connections, so if it starts limiting requests, the search stops early and keeps what it found. Wait 10–15 minutes before searching again. Automated collection may conflict with LinkedIn's terms; keep it to personal use at a sensible volume.
+- **Indeed:** Indeed has no public API and blocks cloud servers, so the app reads it through JSearch (Google for Jobs data). One request returns about 10 jobs, so the free 200 requests a month cover roughly 2,000 jobs. When the quota runs out, Indeed is skipped and LinkedIn still runs. Indeed results come with their full description and ignore the experience-level filter; LinkedIn's own listings are excluded from this source to avoid duplicates.
 - **Offline:** the app opens without a connection and shows the last data you viewed on that device. Changes need a connection.
 - **Costs:** everything can run free: Supabase Free, Vercel Hobby and Groq's free tier. If you use up Groq's free limit for the day, AI features pause until it resets; search and tracking keep working.
 - **Backups:** Settings → Download full backup gives you a JSON file you can restore at any time.

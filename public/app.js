@@ -372,6 +372,13 @@ function tagInput(root, values, placeholder, onChange) {
 /* =========================================================================
    Find jobs
    ========================================================================= */
+function boardName(url) {
+  const h = (String(url).match(/^https?:\/\/([^/]+)/) || [])[1] || "";
+  if (/linkedin\./.test(h)) return "LinkedIn";
+  if (/indeed\./.test(h)) return "Indeed";
+  return h.replace(/^(www|[a-z]{2})\./, "") || "the job board";
+}
+
 function defaultSearch() {
   const p = state.profile || {};
   const order = ["internship", "entry", "associate", "mid-senior", "director", "executive"];
@@ -380,6 +387,7 @@ function defaultSearch() {
   return {
     queries: (p.target_titles || []).slice(0, 4), locations: (p.search_locations || []).slice(0, 2),
     date_posted: "week", work_types: [], experience: exp, job_types: [], per_query: 30, sort: "R", fetch_details: true,
+    sources: state.settings.has_indeed ? ["linkedin", "indeed"] : ["linkedin"],
   };
 }
 
@@ -387,11 +395,13 @@ async function renderJobs() {
   const v = $("#view-jobs");
   if (!state.search) state.search = store.get("searchForm", null) || defaultSearch();
   const s = state.search;
+  s.sources = (s.sources?.length ? s.sources : ["linkedin"]).filter((x) => x !== "indeed" || state.settings.has_indeed);
+  if (!s.sources.length) s.sources = ["linkedin"];
   const opt = (arr, cur) => arr.map(([val, lab]) => `<option value="${val}" ${String(cur) === String(val) ? "selected" : ""}>${lab}</option>`).join("");
   const checks = (name, arr) => arr.map(([val, lab]) => `<label class="check"><input type="checkbox" data-ck="${name}" value="${val}" ${s[name].includes(val) ? "checked" : ""}> ${lab}</label>`).join("");
 
   v.innerHTML = `
-    <div class="page-head"><div><h1>Find jobs</h1><div class="sub">Searches LinkedIn's public job listings and scores every result against your profile.</div></div>
+    <div class="page-head"><div><h1>Find jobs</h1><div class="sub">Searches LinkedIn${state.settings.has_indeed ? " and Indeed" : ""} and scores every result against your profile.</div></div>
       ${state.profile ? "" : `<a class="btn" href="#profile">Add your CV first</a>`}</div>
     <div class="panel"><div class="panel-body">
       <div class="search-grid">
@@ -399,6 +409,8 @@ async function renderJobs() {
         <div><label class="field"><span>Locations <span class="muted">— leave empty for worldwide</span></span></label><div id="sLocs"></div></div>
       </div>
       <div class="filter-grid">
+        <div><label class="field"><span>Search on</span></label><div class="checks">${checks("sources", [["linkedin", "LinkedIn"]])}
+          ${state.settings.has_indeed ? checks("sources", [["indeed", "Indeed"]]) : `<span class="small muted">Indeed: add RAPIDAPI_KEY in Vercel</span>`}</div></div>
         <label class="field"><span>Date posted</span><select id="sDate">${opt([["24h", "Past 24 hours"], ["week", "Past week"], ["month", "Past month"], ["any", "Any time"]], s.date_posted)}</select></label>
         <label class="field"><span>Results per title & location</span><select id="sPer">${opt([[20, "20"], [30, "30"], [50, "50"], [100, "100"]], s.per_query)}</select></label>
         <label class="field"><span>Order</span><select id="sSort">${opt([["R", "Most relevant"], ["DD", "Most recent"]], s.sort)}</select></label>
@@ -410,7 +422,7 @@ async function renderJobs() {
       <div class="row" style="margin-top:16px">
         <span class="small muted" id="sMsg">${searchHint()}</span><span class="spacer"></span>
         <button class="btn ghost sm" id="sReset">Reset from profile</button>
-        <button class="btn primary" id="sGo">Search LinkedIn</button>
+        <button class="btn primary" id="sGo">Search jobs</button>
       </div>
       <div class="progress ${state.task?.status === "running" ? "" : "hidden"}" id="sProg"><div style="width:${(state.task?.progress || 0) * 100}%"></div></div>
     </div></div>
@@ -449,7 +461,7 @@ async function renderJobs() {
 function searchHint() {
   const s = state.search;
   if (!s.queries.length) return "Add at least one job title.";
-  const combos = s.queries.length * Math.max(1, s.locations.length);
+  const combos = s.queries.length * Math.max(1, s.locations.length) * Math.max(1, (s.sources || []).length);
   const est = combos * s.per_query;
   const mins = Math.ceil((combos * (s.per_query / 10) * 2 + (s.fetch_details ? est * 2.2 : 0)) / 60);
   return `${combos} search${combos > 1 ? "es" : ""}, up to ${est} jobs · about ${mins} min`;
@@ -458,7 +470,7 @@ function updateSearchButton() {
   const b = $("#sGo");
   if (!b) return;
   const running = state.task?.status === "running";
-  b.textContent = running ? "Stop" : "Search LinkedIn";
+  b.textContent = running ? "Stop" : "Search jobs";
   b.classList.toggle("primary", !running);
   $("#sProg")?.classList.toggle("hidden", !running);
   if (running) $("#sMsg").textContent = state.task.message;
@@ -535,8 +547,8 @@ function jobDetail(j) {
     </div>
     <div>
       <div class="side-block row">
-        <a class="btn sm primary" target="_blank" rel="noopener" href="${esc(j.apply_url || j.url)}">${j.apply_url ? "Apply on company site" : "Open on LinkedIn"}</a>
-        ${j.apply_url ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(j.url)}">LinkedIn</a>` : ""}
+        <a class="btn sm primary" target="_blank" rel="noopener" href="${esc(j.apply_url || j.url)}">${j.apply_url ? "Apply on company site" : `Open on ${boardName(j.url)}`}</a>
+        ${j.apply_url ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(j.url)}">${boardName(j.url)}</a>` : ""}
         <button class="btn sm ghost" data-act="hide">${j.hidden ? "Restore" : "Dismiss"}</button>
       </div>
       <div class="side-block"><h3>Why this score</h3>
@@ -1083,6 +1095,7 @@ function renderSettings() {
       </div></div>
       <div class="panel"><div class="panel-head"><h2>About job search</h2></div><div class="panel-body text-2">
         <p>Jobs come from LinkedIn's public job listings, the same pages anyone can view without signing in. No LinkedIn login is used or stored. Searches are deliberately paced; if LinkedIn starts limiting requests, the search stops early and keeps what it found — wait 10–15 minutes before running another.</p>
+        <p>Indeed jobs come through JSearch, which reads Google for Jobs. The free plan allows 200 requests a month, and each page of about 10 jobs uses one. ${state.settings.has_indeed ? "Indeed search is on." : "To turn it on, add RAPIDAPI_KEY in Vercel."}</p>
         <p style="margin:0">Automated collection may conflict with LinkedIn's terms of use. Keep searches to personal use and a sensible volume.</p>
       </div></div>
     </div>`;

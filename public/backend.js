@@ -140,7 +140,7 @@ export async function handle(method, url, body) {
 }
 
 /* ------------------------------------------------------------------ settings & profile */
-on("GET", "/api/settings", async () => ({ has_key: Boolean(config.ai), ai_name: config.aiName || "", email: (await session())?.user?.email || "" }));
+on("GET", "/api/settings", async () => ({ has_key: Boolean(config.ai), ai_name: config.aiName || "", has_indeed: Boolean(config.indeed), email: (await session())?.user?.email || "" }));
 
 async function getProfileRow() {
   return q(sb.from("profiles").select("*").maybeSingle());
@@ -236,7 +236,7 @@ async function rescore(ids = null) {
 }
 on("POST", "/api/jobs/rescore", async () => { await rescore(); return { ok: true }; });
 
-on("POST", "/api/jobs/(\\d+)/hide", async ({ args: [id] }) => {
+on("POST", "/api/jobs/([\\w-]+)/hide", async ({ args: [id] }) => {
   const j = await q(sb.from("jobs").select("hidden").eq("id", id).single());
   await q(sb.from("jobs").update({ hidden: !j.hidden }).eq("id", id));
   return { ok: true };
@@ -247,19 +247,21 @@ async function saveDetail(id, detail) {
   if (Object.keys(vals).length) await q(sb.from("jobs").update({ ...vals, updated_at: now() }).eq("id", id));
 }
 
-on("POST", "/api/jobs/(\\d+)/refresh", async ({ args: [id] }) => {
-  const { job } = await server("/api/job", { id });
-  await saveDetail(id, job);
+// LinkedIn ids are numeric. Other boards (Indeed) arrive with their description, so there is nothing to load.
+const fromLinkedIn = (id) => /^\d+$/.test(id);
+
+on("POST", "/api/jobs/([\\w-]+)/refresh", async ({ args: [id] }) => {
+  if (fromLinkedIn(id)) await saveDetail(id, (await server("/api/job", { id })).job);
   await rescore([id]);
   return q(sb.from("jobs").select("*").eq("id", id).single());
 });
 
-on("POST", "/api/jobs/(\\d+)/tailor", async ({ args: [id] }) => {
+on("POST", "/api/jobs/([\\w-]+)/tailor", async ({ args: [id] }) => {
   if (!config.ai) throw new Error("AI isn't set up yet — see Settings.");
   const prof = await getProfileRow();
   if (!prof?.data) throw new Error("Analyse your CV or LinkedIn profile first.");
   let job = await q(sb.from("jobs").select("*").eq("id", id).single());
-  if (!job.description) { const d = (await server("/api/job", { id })).job; await saveDetail(id, d); job = { ...job, ...d }; }
+  if (!job.description && fromLinkedIn(id)) { const d = (await server("/api/job", { id })).job; await saveDetail(id, d); job = { ...job, ...d }; }
   const { tailor } = await server("/api/tailor", { profile: prof.data, job, cv_text: prof.cv_text || "" });
   await q(sb.from("jobs").update({ tailor }).eq("id", id));
   return tailor;
@@ -284,14 +286,25 @@ async function runSearch(t, p) {
   const found = new Map();
   const pause = () => sleep(1200 + Math.random() * 1400);
   const detailsWanted = p.fetch_details !== false;
+  const sources = (p.sources?.length ? p.sources : ["linkedin"]).filter((s) => s !== "indeed" || config.indeed);
+  const notes = [];
   try {
-    const combos = queries.flatMap((qq) => locs.map((l) => [qq, l]));
-    for (const [ci, [kw, loc]] of combos.entries()) {
+    const combos = queries.flatMap((qq) => locs.flatMap((l) => sources.map((src) => [qq, l, src])));
+    for (const [ci, [kw, loc, src]] of combos.entries()) {
+      if (src === "indeed" && notes.length) { t.progress = ((ci + 1) / combos.length) * (detailsWanted ? 0.35 : 1); continue; } // quota or key problem earlier
+      const label = src === "indeed" ? "Indeed" : "LinkedIn";
       let got = 0, start = 0;
       while (got < perQuery && !t.cancel) {
-        t.message = `Searching “${kw}”${loc ? ` in ${loc}` : ""} — page ${start / 10 + 1}`;
-        const { jobs } = await server("/api/search", { keywords: kw, location: loc, start, date_posted: p.date_posted,
-          work_types: p.work_types, experience: p.experience, job_types: p.job_types, sort: p.sort });
+        t.message = `Searching ${label} for “${kw}”${loc ? ` in ${loc}` : ""} — page ${start / 10 + 1}`;
+        let jobs;
+        try {
+          ({ jobs } = await server("/api/search", { source: src, keywords: kw, location: loc, start, date_posted: p.date_posted,
+            work_types: p.work_types, experience: p.experience, job_types: p.job_types, sort: p.sort }));
+        } catch (e) {
+          if (src !== "indeed") throw e;
+          notes.push(e.status === 402 ? "The free Indeed quota for this month is used up, so Indeed was skipped." : `Indeed was skipped: ${e.message}`);
+          break; // keep going with LinkedIn
+        }
         if (!jobs.length) break;
         const fresh = jobs.filter((j) => !found.has(j.id));
         fresh.forEach((j) => found.set(j.id, { ...j, query: kw }));
@@ -314,7 +327,7 @@ async function runSearch(t, p) {
     if (detailsWanted && ids.length && !t.cancel) {
       const have = new Set();
       for (const c of chunks(ids, 150)) (await q(sb.from("jobs").select("id").in("id", c).not("description", "is", null))).forEach((r) => have.add(r.id));
-      const todo = ids.filter((i) => !have.has(i));
+      const todo = ids.filter((i) => fromLinkedIn(i) && !have.has(i));
       const profile = (await getProfileRow())?.data;
       for (const [n, id] of todo.entries()) {
         if (t.cancel) break;
@@ -331,7 +344,7 @@ async function runSearch(t, p) {
     }
     if (ids.length) await rescore(ids);
     t.status = t.cancel ? "cancelled" : "done";
-    t.message = `${t.cancel ? "Stopped" : "Done"} — ${found.size} jobs found.`;
+    t.message = `${t.cancel ? "Stopped" : "Done"} — ${found.size} jobs found.${notes.length ? " " + notes[0] : ""}`;
   } catch (e) {
     if (found.size) await rescore([...found.keys()]).catch(() => {});
     if (e.status === 429) {

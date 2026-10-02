@@ -9,5 +9,6 @@ export default function handler(req, res) {
     supabaseKey: process.env.SUPABASE_ANON_KEY || "",
     ai: Boolean(ai),
     aiName: ai?.name || "",
+    indeed: Boolean(process.env.RAPIDAPI_KEY),
   });
 }

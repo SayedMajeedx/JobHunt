@@ -331,7 +331,7 @@ function renderProfileResult() {
   const dirty = () => { state.profileDirty = true; $("#pSave").disabled = false; $("#pDirty").textContent = "Unsaved changes"; };
   tagInput($("#tgTitles"), p.target_titles ||= [], "Add a job title…", dirty);
   tagInput($("#tgSkills"), p.skills ||= [], "Add a skill…", dirty);
-  tagInput($("#tgLocs"), p.search_locations ||= [], "e.g. Dubai, United Arab Emirates", dirty);
+  tagInput($("#tgLocs"), p.search_locations ||= [], "e.g. Bahrain", dirty);
   $$("[data-pf]", el).forEach((inp) => inp.addEventListener("input", () => {
     p[inp.dataset.pf] = inp.type === "number" ? (inp.value === "" ? null : +inp.value) : inp.value; dirty();
   }));
@@ -438,7 +438,7 @@ async function renderJobs() {
 
   const persist = () => store.set("searchForm", s);
   tagInput($("#sQueries"), s.queries, "e.g. Data Analyst", () => { persist(); $("#sMsg").textContent = searchHint(); });
-  tagInput($("#sLocs"), s.locations, "e.g. Dubai, United Arab Emirates", () => { persist(); $("#sMsg").textContent = searchHint(); });
+  tagInput($("#sLocs"), s.locations, "e.g. Bahrain", () => { persist(); $("#sMsg").textContent = searchHint(); });
   $("#sDate").onchange = (e) => { s.date_posted = e.target.value; persist(); };
   $("#sPer").onchange = (e) => { s.per_query = +e.target.value; persist(); $("#sMsg").textContent = searchHint(); };
   $("#sSort").onchange = (e) => { s.sort = e.target.value; persist(); };

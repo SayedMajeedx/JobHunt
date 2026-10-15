@@ -443,7 +443,7 @@ async function renderJobs() {
   $("#sPer").onchange = (e) => { s.per_query = +e.target.value; persist(); $("#sMsg").textContent = searchHint(); };
   $("#sSort").onchange = (e) => { s.sort = e.target.value; persist(); };
   $("#sDetails").onchange = (e) => { s.fetch_details = e.target.checked; persist(); $("#sMsg").textContent = searchHint(); };
-  $$("[data-ck]", v).forEach((c) => (c.onchange = () => { s[c.dataset.ck] = $$(`[data-ck="${c.dataset.ck}"]:checked`, v).map((x) => x.value); persist(); }));
+  $$("[data-ck]", v).forEach((c) => (c.onchange = () => { s[c.dataset.ck] = $$(`[data-ck="${c.dataset.ck}"]:checked`, v).map((x) => x.value); persist(); $("#sMsg").textContent = searchHint(); }));
   $("#sReset").onclick = () => { state.search = defaultSearch(); persist(); store.set("searchForm", state.search); renderJobs(); };
   $("#sGo").onclick = () => (state.task?.status === "running" ? cancelSearch() : startSearch());
 
@@ -461,10 +461,12 @@ async function renderJobs() {
 function searchHint() {
   const s = state.search;
   if (!s.queries.length) return "Add at least one job title.";
-  const combos = s.queries.length * Math.max(1, s.locations.length) * Math.max(1, (s.sources || []).length);
-  const est = combos * s.per_query;
-  const mins = Math.ceil((combos * (s.per_query / 10) * 2 + (s.fetch_details ? est * 2.2 : 0)) / 60);
-  return `${combos} search${combos > 1 ? "es" : ""}, up to ${est} jobs · about ${mins} min`;
+  const pairs = s.queries.length * Math.max(1, s.locations.length);
+  const srcs = s.sources?.length ? s.sources : ["linkedin"];
+  const li = srcs.includes("linkedin") ? pairs : 0, ind = srcs.includes("indeed") ? pairs : 0;
+  const est = li * s.per_query + ind * 10;
+  const mins = Math.max(1, Math.ceil((li * (s.per_query / 10) * 2 + ind * 2 + (s.fetch_details ? li * s.per_query * 2.2 : 0)) / 60));
+  return `${li + ind} search${li + ind > 1 ? "es" : ""}, up to ${est} jobs · about ${mins} min${ind ? ` · uses ${ind} free Indeed request${ind > 1 ? "s" : ""}` : ""}`;
 }
 function updateSearchButton() {
   const b = $("#sGo");

@@ -288,6 +288,7 @@ async function runSearch(t, p) {
   const detailsWanted = p.fetch_details !== false;
   const sources = (p.sources?.length ? p.sources : ["linkedin"]).filter((s) => s !== "indeed" || config.indeed);
   const notes = [];
+  let indeedQuota = null;
   try {
     const combos = queries.flatMap((qq) => locs.flatMap((l) => sources.map((src) => [qq, l, src])));
     for (const [ci, [kw, loc, src]] of combos.entries()) {
@@ -296,10 +297,11 @@ async function runSearch(t, p) {
       let got = 0, start = 0;
       while (got < perQuery && !t.cancel) {
         t.message = `Searching ${label} for “${kw}”${loc ? ` in ${loc}` : ""} — page ${start / 10 + 1}`;
-        let jobs;
+        let jobs, quota;
         try {
-          ({ jobs } = await server("/api/search", { source: src, keywords: kw, location: loc, start, date_posted: p.date_posted,
+          ({ jobs, quota } = await server("/api/search", { source: src, keywords: kw, location: loc, start, date_posted: p.date_posted,
             work_types: p.work_types, experience: p.experience, job_types: p.job_types, sort: p.sort }));
+          if (quota) indeedQuota = quota;
         } catch (e) {
           if (src !== "indeed") throw e;
           notes.push(e.status === 402 ? "The free Indeed quota for this month is used up, so Indeed was skipped." : `Indeed was skipped: ${e.message}`);
@@ -316,6 +318,7 @@ async function runSearch(t, p) {
         got += jobs.length;
         t.found = found.size;
         start += 10;
+        if (src === "indeed") break; // one page (~10 jobs) per title & location keeps the free monthly quota going
         await pause();
         if (!fresh.length && jobs.length < 10) break;
       }
@@ -344,7 +347,8 @@ async function runSearch(t, p) {
     }
     if (ids.length) await rescore(ids);
     t.status = t.cancel ? "cancelled" : "done";
-    t.message = `${t.cancel ? "Stopped" : "Done"} — ${found.size} jobs found.${notes.length ? " " + notes[0] : ""}`;
+    const left = indeedQuota ? ` Indeed: ${indeedQuota.remaining}${indeedQuota.limit ? ` of ${indeedQuota.limit}` : ""} free requests left this month.` : "";
+    t.message = `${t.cancel ? "Stopped" : "Done"} — ${found.size} jobs found.${notes.length ? " " + notes[0] : left}`;
   } catch (e) {
     if (found.size) await rescore([...found.keys()]).catch(() => {});
     if (e.status === 429) {

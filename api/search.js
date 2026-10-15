@@ -18,7 +18,8 @@ export default async function handler(req, res) {
   if (b.source === "indeed") {
     if (!indeed.configured()) return res.status(400).json({ error: "Indeed search isn't set up. Add RAPIDAPI_KEY in Vercel (see the README)." });
     try {
-      res.status(200).json({ jobs: await indeed.searchPage({ ...common, page: start / 10 + 1 }) });
+      const { jobs, quota } = await indeed.searchPage(common);
+      res.status(200).json({ jobs, quota });
     } catch (e) {
       if (e instanceof indeed.QuotaExceeded) return res.status(402).json({ error: "The free Indeed search quota for this month is used up." });
       res.status(502).json({ error: e.message });
